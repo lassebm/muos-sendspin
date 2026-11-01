@@ -1,0 +1,37 @@
+# One job on GitHub's arm64 runner, natively (no emulation), in the device's build container
+# (docker/Dockerfile): the lint on the device build, then the muOS package. Sendspin.zip is kept as
+# the run's artifact; a vX.Y.Z tag also publishes it as a release.
+name: Build
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-26.04-arm
+    permissions:
+      contents: write  # the release
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0  # tags and history for the version (git describe)
+          persist-credentials: false  # the write token only reaches the Release step
+      - name: Lint
+        run: make device-lint
+      - name: Build and package
+        run: make device-build
+      - uses: actions/upload-artifact@v7
+        with:
+          name: Sendspin
+          path: dist/Sendspin.zip
+          if-no-files-found: error
+      - name: Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" dist/Sendspin.zip --generate-notes

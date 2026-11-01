@@ -1,0 +1,14 @@
+# clang-format 23 (Homebrew llvm). The style the code was written in: Google-based, 4-space
+# indent, 120 columns, short statements kept on one line.
+BasedOnStyle: Google
+Standard: Latest
+IndentWidth: 4
+ColumnLimit: 120
+AccessModifierOffset: -4
+DerivePointerAlignment: false
+PointerAlignment: Left
+AllowShortFunctionsOnASingleLine: Inline
+AllowShortIfStatementsOnASingleLine: AllIfsAndElse
+AllowShortLoopsOnASingleLine: true
+AllowShortCaseLabelsOnASingleLine: true
+IncludeBlocks: Preserve

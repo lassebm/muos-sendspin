@@ -1,0 +1,44 @@
+# clang-tidy 23. Bug-prone patterns, performance, the static analyzer and modern C++, minus checks
+# that fight the code's style or its C libraries (SDL and LVGL flags are signed ints, LVGL user data
+# is an integer cast to a pointer, the UI's float maths narrows on purpose).
+Checks: >
+  -*,
+  bugprone-*,
+  -bugprone-easily-swappable-parameters,
+  -bugprone-narrowing-conversions,
+  -bugprone-signed-bitwise,
+  -bugprone-switch-missing-default-case,
+  -bugprone-unhandled-code-paths,
+  -bugprone-unchecked-optional-access,
+  -bugprone-exception-escape,
+  clang-analyzer-*,
+  -clang-analyzer-optin.performance.Padding,
+  performance-*,
+  -performance-enum-size,
+  -performance-no-int-to-ptr,
+  modernize-*,
+  -modernize-use-trailing-return-type,
+  -modernize-use-designated-initializers,
+  -modernize-avoid-c-arrays,
+  -modernize-use-integer-sign-comparison,
+  cppcoreguidelines-special-member-functions,
+  cppcoreguidelines-init-variables,
+  misc-const-correctness,
+  readability-container-contains,
+  readability-container-data-pointer,
+  readability-container-size-empty,
+  readability-else-after-return,
+  readability-inconsistent-declaration-parameter-name,
+  readability-make-member-function-const,
+  readability-qualified-auto,
+  readability-redundant-*,
+  readability-simplify-boolean-expr,
+  readability-use-anyofallof,
+CheckOptions:
+  misc-const-correctness.AnalyzePointers: false
+  misc-const-correctness.AllowedTypes: 'std::scoped_lock;std::lock_guard;std::unique_lock'
+  cppcoreguidelines-special-member-functions.AllowMissingMoveFunctionsWhenCopyIsDeleted: true
+  cppcoreguidelines-special-member-functions.AllowSoleDefaultDtor: true
+WarningsAsErrors: '*'
+HeaderFilterRegex: '/src/(app|net|platform|player|ui)/'
+ExcludeHeaderFilterRegex: '/_deps/'
