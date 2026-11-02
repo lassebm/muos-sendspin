@@ -168,7 +168,7 @@ foreach(entry
         "sendspin-cpp|${sendspin_cpp_SOURCE_DIR}/LICENSE"
         "LVGL|${lvgl_SOURCE_DIR}/LICENCE.txt"
         "Montserrat font (LVGL built-in)|${lvgl_fonts}/Montserrat/OFL.txt"
-        "Font Awesome symbols (LVGL built-in)|${lvgl_fonts}/FontAwesome5/LICENSE.txt"
+        "Font Awesome 5 Free (assets/fonts/Symbols.ttf, and LVGL built-in)|${lvgl_fonts}/FontAwesome5/LICENSE.txt"
         "ArduinoJson|${arduinojson_SOURCE_DIR}/LICENSE.txt"
         "IXWebSocket|${ixwebsocket_SOURCE_DIR}/LICENSE.txt"
         "micro-flac|${micro_flac_SOURCE_DIR}/LICENSE"

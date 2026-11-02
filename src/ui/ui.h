@@ -33,7 +33,8 @@ struct Extras {
 /// updated when their content changes, so LVGL redraws only what changed.
 class Ui {
 public:
-    Ui(Backend& backend, const std::filesystem::path& regular_ttf, const std::filesystem::path& bold_ttf);
+    Ui(Backend& backend, const std::filesystem::path& regular_ttf, const std::filesystem::path& bold_ttf,
+       const std::filesystem::path& symbols_ttf);
     ~Ui();
     Ui(const Ui&) = delete;
     Ui& operator=(const Ui&) = delete;

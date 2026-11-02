@@ -7,11 +7,14 @@ with your other speakers, and shows what's playing with artwork and playback con
 Built for and tested on the Anbernic RG35XX H with muOS 2606.0. The layout adapts to the screen
 (landscape, square and portrait), so other muOS devices should work too.
 
-<p>
-  <img src="docs/now-playing.png" width="480" alt="Now Playing on a 640×480 handheld: cover art, title, artist, album, shuffle, play/pause, repeat, progress and button hints">
-  <img src="docs/portrait.png" width="270" alt="Now Playing on a portrait screen">
-</p>
-<img src="docs/settings.png" width="480" alt="The Settings menu">
+<img src="docs/now-playing.png" width="480" alt="Now Playing on a 640×480 handheld: cover art, title, artist, album, shuffle, play/pause, repeat, progress and button hints"><br>
+*Now Playing on a 640×480 handheld*
+
+<img src="docs/portrait.png" width="270" alt="Now Playing on a portrait screen"><br>
+*The same on a portrait screen*
+
+<img src="docs/settings.png" width="480" alt="The Settings menu"><br>
+*Settings*
 
 ## Install
 
@@ -85,9 +88,9 @@ make device-deploy   # build the package and install it on a device over SSH (DE
 
 MIT, see [LICENSE](LICENSE). The app builds on [sendspin-cpp](https://github.com/Sendspin/sendspin-cpp)
 (the official Sendspin SDK) and its dependencies, [LVGL](https://lvgl.io),
-[SDL2](https://libsdl.org) (the device's own copy, not bundled), [stb_image](https://github.com/nothings/stb)
-and the [Noto Sans](https://fonts.google.com/noto/specimen/Noto+Sans) font. Their licenses ship in the
-package as `THIRD_PARTY_LICENSES.txt` and `assets/fonts/OFL.txt`.
+[SDL2](https://libsdl.org) (the device's own copy, not bundled), [stb_image](https://github.com/nothings/stb),
+the [Noto Sans](https://fonts.google.com/noto/specimen/Noto+Sans) font and [Font Awesome](https://fontawesome.com)
+symbols. Their licenses ship in the package as `THIRD_PARTY_LICENSES.txt` and `assets/fonts/OFL.txt`.
 
 The cover in the screenshots is cropped from the [Big Buck Bunny](https://peach.blender.org) poster,
 © Blender Foundation, [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/).

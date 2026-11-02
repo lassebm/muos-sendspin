@@ -13,6 +13,7 @@
 #include <format>
 #include <fstream>
 #include <iterator>
+#include <map>
 #include <utility>
 
 namespace ui {
@@ -354,30 +355,51 @@ constexpr lv_buttonmatrix_ctrl_t kKeyCtrl[] = {
 
 }  // namespace
 
-// --- fonts: Noto Sans through tiny_ttf, LVGL's Montserrat as symbol fallback -------------------
+// --- fonts: Noto Sans and the symbols (Symbols.ttf) through tiny_ttf, so both scale -------------
 
 struct Ui::Fonts {
-    std::vector<uint8_t> regular, bold;
+    std::vector<uint8_t> regular, bold, symbols;
     std::vector<lv_font_t*> owned;
+    std::map<int, const lv_font_t*> symbols_by_em;
 
-    /// px is the full line height (ascent + descent), as the layout computes it; tiny_ttf sizes by
-    /// the em, and Noto Sans' ascent + descent is 1.362 em. Without the font file: the fallback.
-    const lv_font_t* make(const std::vector<uint8_t>& data, int px, const lv_font_t* fallback) {
-        // tiny_ttf trusts the data (it doesn't check the size), so a missing file must not reach it.
-        if (data.empty()) return fallback;
-        const int em = std::max(6, static_cast<int>(std::lround(px / 1.362)));
-        lv_font_t* f = lv_tiny_ttf_create_data_ex(data.data(), data.size(), em, LV_FONT_KERNING_NORMAL, 256);
-        if (!f) {
-            logx::error("font: not a usable TrueType font, using the built-in one");
-            return fallback;
+    /// Text at line height px (ascent + descent), as the layout computes it; tiny_ttf sizes by the
+    /// em, and Noto Sans' ascent + descent is 1.362 em. Symbols in the text (arrows, OK, ...) come
+    /// from Symbols.ttf at the same em.
+    const lv_font_t* text(const std::vector<uint8_t>& data, int px) {
+        return text_em(data, static_cast<int>(std::lround(px / 1.362)));
+    }
+    /// Without the font file: LVGL's built-in Montserrat (with its own symbols), at its one size.
+    const lv_font_t* text_em(const std::vector<uint8_t>& data, int em) {
+        em = std::max(6, em);
+        lv_font_t* f = create(data, em, 256);
+        if (!f) return &lv_font_montserrat_14;
+        f->fallback = symbol(em);
+        return f;
+    }
+    /// Symbols (LV_SYMBOL_*) at em px. Without Symbols.ttf: LVGL's built-in Montserrat, at its size.
+    const lv_font_t* symbol(int em) {
+        em = std::max(6, em);
+        auto [it, inserted] = symbols_by_em.try_emplace(em, &lv_font_montserrat_14);
+        if (inserted) {
+            if (lv_font_t* f = create(symbols, em, 16)) {
+                f->fallback = &lv_font_montserrat_14;
+                it->second = f;
+            }
         }
-        f->fallback = fallback;  // symbols (play, pause, arrows, ...) come from Montserrat
-        owned.push_back(f);
+        return it->second;
+    }
+    lv_font_t* create(const std::vector<uint8_t>& data, int em, size_t cache) {
+        // tiny_ttf trusts the data (it doesn't check the size), so a missing file must not reach it.
+        if (data.empty()) return nullptr;
+        lv_font_t* f = lv_tiny_ttf_create_data_ex(data.data(), data.size(), em, LV_FONT_KERNING_NORMAL, cache);
+        if (!f) logx::error("font: not a usable TrueType font, using the built-in one");
+        else owned.push_back(f);
         return f;
     }
     void clear() {
         for (lv_font_t* f : owned) lv_tiny_ttf_destroy(f);
         owned.clear();
+        symbols_by_em.clear();
     }
     Fonts() = default;
     Fonts(const Fonts&) = delete;
@@ -389,7 +411,8 @@ struct Ui::Fonts {
     const lv_font_t *large_bold = nullptr, *display_bold = nullptr;
 };
 
-Ui::Ui(Backend& backend, const std::filesystem::path& regular_ttf, const std::filesystem::path& bold_ttf)
+Ui::Ui(Backend& backend, const std::filesystem::path& regular_ttf, const std::filesystem::path& bold_ttf,
+       const std::filesystem::path& symbols_ttf)
     : b_(backend), fonts_(std::make_unique<Fonts>()) {
     // Without them the text comes out in LVGL's built-in Montserrat, at fixed sizes: still usable.
     const auto load = [](const std::filesystem::path& path) {
@@ -399,6 +422,7 @@ Ui::Ui(Backend& backend, const std::filesystem::path& regular_ttf, const std::fi
     };
     fonts_->regular = load(regular_ttf);
     fonts_->bold = load(bold_ttf);
+    fonts_->symbols = load(symbols_ttf);
 }
 
 Ui::~Ui() {
@@ -458,12 +482,12 @@ void Ui::build() {
 
     Fonts& f = *fonts_;
     f.clear();
-    f.small = f.make(f.regular, l.type.small, &lv_font_montserrat_14);
-    f.small_bold = f.make(f.bold, l.type.small, &lv_font_montserrat_14);
-    f.body = f.make(f.regular, l.type.body, &lv_font_montserrat_20);
-    f.body_bold = f.make(f.bold, l.type.body, &lv_font_montserrat_20);
-    f.large_bold = f.make(f.bold, l.type.large, &lv_font_montserrat_28);
-    f.display_bold = f.make(f.bold, l.type.display, &lv_font_montserrat_28);
+    f.small = f.text(f.regular, l.type.small);
+    f.small_bold = f.text(f.bold, l.type.small);
+    f.body = f.text(f.regular, l.type.body);
+    f.body_bold = f.text(f.bold, l.type.body);
+    f.large_bold = f.text(f.bold, l.type.large);
+    f.display_bold = f.text(f.bold, l.type.display);
 
     lv_obj_set_style_bg_opa(scr, LV_OPA_COVER, 0);
     lv_obj_set_scrollable(scr, false);
@@ -500,7 +524,7 @@ void Ui::build() {
         lv_obj_set_width(group_, l.progress.w / 2);
     }
 
-    // Transport: symbols from Montserrat, each tappable; placed by place_transport().
+    // Transport: symbols, each tappable; placed by place_transport().
     transport_cx_ = l.transport.x + l.transport.w / 2.0f;
     transport_cy_ = l.transport.y + l.transport.h / 2.0f;
     transport_step_ = std::min(l.transport.w / 5.0f, l.transport.h * 1.7f);
@@ -511,15 +535,15 @@ void Ui::build() {
         lv_obj_set_ext_click_area(s, static_cast<int32_t>(transport_step_ / 3));
         return s;
     };
-    shuffle_ = symbol(LV_SYMBOL_SHUFFLE, &lv_font_montserrat_20, Action::ToggleShuffle);
-    prev_ = symbol(LV_SYMBOL_PREV, &lv_font_montserrat_28, Action::Previous);
-    play_ = symbol(LV_SYMBOL_PLAY, &lv_font_montserrat_28, Action::PlayPause);
-    next_ = symbol(LV_SYMBOL_NEXT, &lv_font_montserrat_28, Action::Next);
-    repeat_ = symbol(LV_SYMBOL_LOOP, &lv_font_montserrat_20, Action::CycleRepeat);
+    shuffle_ = symbol(LV_SYMBOL_SHUFFLE, f.symbol(l.icon_small), Action::ToggleShuffle);
+    prev_ = symbol(LV_SYMBOL_PREV, f.symbol(l.icon), Action::Previous);
+    play_ = symbol(LV_SYMBOL_PLAY, f.symbol(l.icon), Action::PlayPause);
+    next_ = symbol(LV_SYMBOL_NEXT, f.symbol(l.icon), Action::Next);
+    repeat_ = symbol(LV_SYMBOL_LOOP, f.symbol(l.icon_small), Action::CycleRepeat);
     dot_px_ = std::max(4.0f, unit / 100.0f);  // one diameter for both dots; their boxes are per icon
     shuffle_dot_ = lv_image_create(np_);      // rendered in apply_theme(), sized in place_transport()
     repeat_dot_ = lv_image_create(np_);
-    repeat_one_ = label(np_, &lv_font_montserrat_14);
+    repeat_one_ = label(np_, f.text_em(f.bold, static_cast<int>(std::lround(l.icon_small * 0.7f))));  // badge
     lv_label_set_text(repeat_one_, "1");
     place_transport();
 
@@ -931,8 +955,8 @@ void Ui::refresh_page(const PlayerStatus& st, const Extras& x) {
             set_color(val, th.dim);
             lv_obj_align(val, LV_ALIGN_RIGHT_MID, 0, 0);
             if (r.opens) {
-                // The arrow is a Montserrat symbol: inside the value's Noto line it would sit where
-                // Montserrat puts it. Its own label, centred on the ink of the value's capitals.
+                // The arrow is a symbol (Symbols.ttf): inside the value's Noto line it would sit
+                // where that font puts it. Its own label, centred on the ink of the value's capitals.
                 lv_obj_t* arrow = label(row, f.body);
                 set_color(arrow, th.dim);
                 lv_label_set_text(arrow, LV_SYMBOL_RIGHT);
@@ -1231,7 +1255,12 @@ void Ui::update_now_playing(const PlayerStatus& st, const NowPlayingView& v, boo
     set_text(group_, v.group);
     update_artwork(st);
 
-    set_text(play_, v.playing ? LV_SYMBOL_PAUSE : LV_SYMBOL_PLAY);
+    // Play and pause have different ink: centre the new one.
+    if (const char* sym = v.playing ? LV_SYMBOL_PAUSE : LV_SYMBOL_PLAY;
+        std::string_view(lv_label_get_text(play_)) != sym) {
+        set_text(play_, sym);
+        place_transport();
+    }
     set_color(prev_, v.can_previous ? theme_.fg : theme_.faint);
     set_color(next_, v.can_next ? theme_.fg : theme_.faint);
     set_color(play_, v.can_play_pause ? theme_.fg : theme_.faint);
@@ -1412,7 +1441,7 @@ void Ui::update_footer(const PlayerStatus& st, const NowPlayingView& v, const Ex
         const uint32_t n = lv_obj_get_child_count(footer_);
         if (n == 0) return true;
         const lv_obj_t* last = lv_obj_get_child(footer_, static_cast<int32_t>(n) - 1);
-        return lv_obj_get_x2(last) <= lv_obj_get_x2(footer_);
+        return lv_obj_get_x2(last) <= lv_obj_get_width(footer_);  // x2: exclusive, relative to the footer
     };
     for (int32_t i = static_cast<int32_t>(lv_obj_get_child_count(footer_)) - 1; i >= 0 && !fits(); --i) {
         lv_obj_t* item = lv_obj_get_child(footer_, i);

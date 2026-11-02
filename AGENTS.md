@@ -15,7 +15,8 @@ src/net/       mDNS: Bonjour on macOS, our own responder on the device; local IP
 src/platform/  input mapping, logging, paths, muOS idle-inhibit files, ALSA configuration
 src/ui/        LVGL ↔ SDL backend, the screens (ui.cpp), theme from artwork, layout, glyphs
 packaging/     the muOS app folder (mux_launch.sh, mux_lang.ini; the icon is the theme's "music" glyph)
-assets/        bundled fonts (Noto Sans, OFL) and the lean ALSA configuration
+assets/        bundled fonts (Noto Sans, OFL; Symbols.ttf: the LV_SYMBOL_* glyphs we use, a subset of
+               LVGL's Font Awesome 5, so they scale) and the lean ALSA configuration
 docker/        device build container (arm64 Debian, upstream SDL 2.28.5)
 scripts/       device (build, lint, deploy) and lint (the Makefile's targets call them)
 third_party/   stb_image (its commit is in COMMIT)
@@ -49,6 +50,10 @@ Use the Makefile's targets; they are what CI runs too.
   the handheld's view on a desktop. `kill -HUP <pid>` saves one from a running instance.
   docs/*.png (README) are 640×480, 480×640 and `--menu settings`, with `--gamepad-ui` and a
   600×600 square crop of the Big Buck Bunny poster (CC BY 3.0) as `--demo-artwork`, run through `pngquant --strip`.
+- `assets/fonts/Symbols.ttf`: after using another `LV_SYMBOL_*`, add its code point and regenerate:
+  `pyftsubset build/_deps/lvgl-src/scripts/generators/built_in_font/FontAwesome5-Solid+Brands+Regular.woff
+  --unicodes=F00C,F048,F04B,F04C,F051,F054,F074,F079,F55A --flavor= --layout-features= --no-hinting
+  --desubroutinize --output-file=assets/fonts/Symbols.ttf` (fontTools).
 - Debugging: `--log-level debug`, `--log-file FILE`, `-DMUOS_SENDSPIN_TRACE=ON` (inbound protocol
   messages and audio chunk timestamps), `kill -USR1/-USR2` shifts sync by ±10 ms.
 

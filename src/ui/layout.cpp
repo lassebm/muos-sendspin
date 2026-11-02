@@ -24,6 +24,8 @@ Layout compute_layout(int w, int h) {
     l.type.body = pct(l.type.small, 1.25f);
     l.type.large = pct(l.type.small, 1.5625f);
     l.type.display = pct(l.type.small, 2.44f);
+    l.icon = pct(unit, 0.0584f);  // 28 and 20 px at 640x480
+    l.icon_small = pct(unit, 0.0417f);
 
     const int footer_h = l.type.small * 3 / 2 + l.margin / 3;  // hint pills: a line of small text, padded
     l.footer = {l.margin, h - l.margin / 3 - footer_h, w - 2 * l.margin, footer_h};

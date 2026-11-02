@@ -31,6 +31,15 @@ namespace app {
 
 namespace {
 
+#ifdef MUOS_DEVICE
+// Exclusive fullscreen at the display's mode, as always on the device: muOS's patched SDL
+// (rotation) creates a second renderer with desktop fullscreen.
+constexpr Uint32 kFullscreen = SDL_WINDOW_FULLSCREEN;
+#else
+// Fullscreen at the desktop's own mode: an exclusive one would drop macOS to a non-Retina mode.
+constexpr Uint32 kFullscreen = SDL_WINDOW_FULLSCREEN_DESKTOP;
+#endif
+
 // Signals: SIGINT/SIGTERM quit cleanly, SIGHUP saves a screenshot of the next frame (remote
 // testing), SIGUSR1/SIGUSR2 tune latency by +/-10 ms (scripted sync tests). Lock-free atomics: the
 // handlers may run on any thread, and must not lose a step the main loop is taking at that moment.
@@ -310,8 +319,8 @@ void App::dispatch(Action a) {
     } else if (ui_->menu_open()) {
         if (ui_->menu_action(a, *service_, st)) running_ = false;
     } else if (a == Action::ToggleFullscreen) {
-        const bool fs = SDL_GetWindowFlags(window_) & SDL_WINDOW_FULLSCREEN_DESKTOP;
-        SDL_SetWindowFullscreen(window_, fs ? 0 : SDL_WINDOW_FULLSCREEN_DESKTOP);
+        const bool fs = SDL_GetWindowFlags(window_) & SDL_WINDOW_FULLSCREEN;
+        SDL_SetWindowFullscreen(window_, fs ? 0 : kFullscreen);
     } else if (opt_.demo) {
         if (const auto shown = demo_.handle(a)) ui_->show_volume(shown->first, shown->second);
     } else if (a == Action::PlayPause && st.pairing_window_prompt) {
@@ -391,7 +400,7 @@ int App::run(ui::Extras extras) {
     const auto [ow, oh] = output_size();
     backend_ = std::make_unique<ui::Backend>(renderer_, ow, oh);
     ui_ = std::make_unique<ui::Ui>(*backend_, paths::asset("fonts/NotoSans-Regular.ttf"),
-                                   paths::asset("fonts/NotoSans-Bold.ttf"));
+                                   paths::asset("fonts/NotoSans-Bold.ttf"), paths::asset("fonts/Symbols.ttf"));
     if (!opt_.menu.empty() && !ui_->open_menu_page(opt_.menu)) {
         logx::error("unknown --menu page: {}", opt_.menu);
         return 2;
@@ -518,7 +527,7 @@ int run(Options opt) {
             ww = mode.w;
             wh = mode.h;
         }
-        wflags |= SDL_WINDOW_FULLSCREEN;
+        wflags |= kFullscreen;
     } else {
         wflags |= SDL_WINDOW_RESIZABLE;
     }

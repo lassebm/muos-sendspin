@@ -26,6 +26,8 @@ struct Layout {
         int large = 0;    // title, headings
         int display = 0;  // big readouts (sync offset, pairing code)
     } type;
+    int icon = 0;        // em (px) of the transport's play/pause, previous and next symbols
+    int icon_small = 0;  // ... and of shuffle and repeat
 };
 
 [[nodiscard]] Layout compute_layout(int w, int h);
